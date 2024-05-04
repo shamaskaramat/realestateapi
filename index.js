@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const app = express();
 const morgan = require("morgan");
 const error = require("./Middleware/error")
+const path = require("path")
 
 // .env
 dotenv.config();
@@ -21,6 +22,9 @@ app.get("/", (req, res) => {
     message: "Real estate project",
   });
 });
+
+// --- images path 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
 // ---- routes
 app.use("/api/v1/user", require("./routes/UserRoute"));
