@@ -13,8 +13,8 @@ app.use(morgan('dev'));
 
 // --- bodyParser
 var bodyParser = require('body-parser')
-app.use(bodyParser.urlencoded({ extended: false, limit : "100mb" }))
-app.use(bodyParser.json({limit : "100mb" }))
+app.use(bodyParser.urlencoded({ extended: false, limit: "100mb" }))
+app.use(bodyParser.json({ limit: "100mb" }))
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -32,6 +32,9 @@ app.use("/api/v1/user", require("./routes/UserRoute"));
 // ---- error
 app.use(error);
 
+// Base URL for forget password routes
+// app.use("/api/auth", require("./routes/UserRoute"));
+
 // Start the server
 const server = app.listen(process.env.PORT, () => {
   console.log(`Server is running on http://localhost:${process.env.PORT}`);
@@ -39,18 +42,21 @@ const server = app.listen(process.env.PORT, () => {
 
 
 // --- unexpection error 
-process.on("uncaughtException", (err)=>{
+process.on("uncaughtException", (err) => {
   console.log(`uncaughtException, server is shutting down due to ${err.message}`);
-   server.close(()=>{
+  server.close(() => {
     process.exit(1);
-   })
+  })
 });
 
 // --- unhandle unhandledRejection 
-process.on("unhandledRejection", (err)=>{
+process.on("unhandledRejection", (err) => {
   console.log(`unhandledRejection, server is shutting down due to ${err.message}`);
-   server.close(()=>{
+  server.close(() => {
     process.exit(1);
-   })
+  })
 });
+
+
+
 
