@@ -252,6 +252,115 @@ module.exports = {
       next(new ErrorHandler(error.message, 400))
     }
   },
+
+ // -- verify user
+ TokenVerify: async (req, res, next) => {
+  try {
+    const user = await Prisma.user.findFirst({
+      where: {
+        id: req.user.id,
+      },
+      include: {
+        properties: true,
+      },
+    });
+
+    // --- not of user
+    if (!user) {
+      return next(new ErrorHandler("Token is invalid", 400));
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    next(new ErrorHandler(error.message, 400));
+  }
+},
+
+// --- update user profile
+updateProfile: async (req, res, next) => {
+  try {
+    const user = await Prisma.user.findFirst({
+      where: {
+        id: req.user.id,
+      },
+    });
+
+    // --- not of user
+    if (!user) {
+      return next(new ErrorHandler("Token is invalid", 400));
+    }
+
+    if (req.body.username) {
+      user.username = req.body.username;
+    }
+
+    if (req.body.email) {
+      user.email = req.body.email;
+    }
+
+    if (req.file) {
+      if (user?.profileImage) {
+        const filepath = path.join(
+          __dirname,
+          "../uploads",
+          user.profileImage
+        );
+        fs.unlink(filepath, async (err) => {
+          if (err) {
+            console.log(`Error in file deleting ${err}`);
+          }
+          console.log("File deleted successfully");
+          const file = req.file.filename;
+          const fileUrl = path.join(file);
+          user.profileImage = fileUrl;
+          const updatedUser = await Prisma.user.update({
+            where: { id: user.id },
+            data: user,
+          });
+
+          res.status(200).json({
+            success: true,
+            message: "User updated successfully",
+            updatedUser,
+          });
+        });
+      } else {
+        const file = req.file.filename;
+        user.profileImage = file;
+        // await user.save();
+        const updatedUser = await Prisma.user.update({
+          where: { id: user.id },
+          data: user,
+        });
+
+        res.status(200).json({
+          success: true,
+          message: "User updated successfully",
+          updatedUser,
+        });
+      }
+    } else {
+      // --- if noe file in req
+      // await user.save();
+      const updatedUser = await Prisma.user.update({
+        where: { id: user.id },
+        data: user,
+      });
+      res.status(200).json({
+        success: true,
+        message: "User updated successfully",
+        updatedUser,
+      });
+    }
+  } catch (error) {
+    next(new ErrorHandler(error.message, 400));
+  }
+},
+
+
   //forget password 
   ForgetPassword: async (req, res, next) => {
     try {
@@ -294,47 +403,6 @@ module.exports = {
       next(new ErrorHandler(error.message, 400));
     }
   },
-  // reset password based on otp
-  // ResetPassword: async (req, res, next) => {
-
-  //   try {
-  //     if (!email || !OTP) {
-  //       return next(new ErrorHandler("Invalid email or OTP", 400));
-  //     }
-
-  //     // Check if user exists with the provided email and OTP
-  //     const user = await Prisma.user.findFirst({
-  //       where: {
-  //         email: email,
-  //         OTP: OTP,
-  //       },
-  //     });
-
-  //     if (!user) {
-  //       return next(new ErrorHandler("Invalid OTP", 400));
-  //     }
-
-  //     // Clear the OTP field after successful verification
-  //     user.OTP = null;
-  //     await Prisma.user.update({
-  //       where: {
-  //         id: user.id,
-  //       },
-  //       data: {
-  //         OTP: null,
-  //       },
-  //     });
-
-  //     res.status(200).json({
-  //       success: true,
-  //       message: "OTP verification successful",
-  //     });
-  //   } catch (error) {
-  //     next(new ErrorHandler(error.message, 400));
-  //   }
-  // },
-
-
   // New function to set a new password after OTP verification
   SetNewPassword: async (req, res, next) => {
     try {

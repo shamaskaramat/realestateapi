@@ -8,17 +8,23 @@ router.post("/signup", upload.single("file"), controller.CreateUser);
 
 router.post("/login", controller.LoginUser);
 
-router.get("/test", TokenVerify, (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "Real estate project",
-    });
-})
-router.post("/forgot-password", controller.ForgetPassword);
+router.get(
+  "/verify",
+  TokenVerify,
+  upload.single("file"),
+  controller.TokenVerify
+);
+
+router.put(
+  "/update",
+  TokenVerify,
+  upload.single("file"),
+  controller.updateProfile
+);
 
 // Route for resetting password based on token
-// router.post("/reset-password", controller.ResetPassword);
+router.post("/reset-password", controller.ForgetPassword);
 
 // Route for setting a new password after OTP verification
-router.post('/set-new-password', controller.SetNewPassword);
+router.post("/set-new-password", controller.SetNewPassword);
 module.exports = router;
