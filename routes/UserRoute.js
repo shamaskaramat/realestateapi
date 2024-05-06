@@ -23,8 +23,8 @@ router.put(
 );
 
 // Route for resetting password based on token
-router.post("/reset-password", controller.ForgetPassword);
+router.post("/forgotpassword", controller.ForgetPassword);
 
 // Route for setting a new password after OTP verification
-router.post("/set-new-password", controller.SetNewPassword);
+router.post("/resetpassword", controller.SetNewPassword);
 module.exports = router;

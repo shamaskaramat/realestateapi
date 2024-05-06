@@ -6,11 +6,15 @@ const { upload } = require("../Middleware/Multer");
 
 router.post(
   "/create",
-  upload.single("file"),
+  upload.array("file"),
   TokenVerify,
   controller.createProperty
 );
 
 router.get("/properties", controller.GetProperties);
+
+router.delete("/delete/:id", TokenVerify, controller.deleteProperty);
+
+router.get("/property/:id", controller.GetPropertybyId);
 
 module.exports = router;

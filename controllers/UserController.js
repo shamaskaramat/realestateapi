@@ -12,21 +12,24 @@ module.exports = {
   CreateUser: async (req, res, next) => {
     try {
       const { username, email, password, isSocialLogin } = req.body;
+      if (!isSocialLogin) {
+        return next(new ErrorHandler("isSocialLogin is required", 400));
+      }
       // console.log(req.body)
       if (isSocialLogin == false || isSocialLogin === "false") {
         if (!username) {
-          return next(new ErrorHandler("Invalid username", 400))
+          return next(new ErrorHandler("Invalid username", 400));
         }
         if (!email) {
-          return next(new ErrorHandler("Invalid email", 400))
+          return next(new ErrorHandler("Invalid email", 400));
         }
         if (!password) {
-          return next(new ErrorHandler("Invalid password", 400))
+          return next(new ErrorHandler("Invalid password", 400));
         }
 
-        // --- check the email is correct  
+        // --- check the email is correct
         if (!validator.isEmail(email)) {
-          return next(new ErrorHandler("Invalid email", 400))
+          return next(new ErrorHandler("Invalid email", 400));
         }
 
         // ---- chack is user already in db
@@ -47,25 +50,25 @@ module.exports = {
               } else {
                 console.log("file deleted successfuly");
               }
-            })
+            });
           }
-          return next(new ErrorHandler("User already exist", 400))
+          return next(new ErrorHandler("User already exist", 400));
         }
 
-        // -- check is profileimage in req 
+        // -- check is profileimage in req
         if (req.file) {
           var profileImage = req.file.filename;
         }
 
-        // -- hash password 
-        const hashPassword = await bcrypt.hash(password, 10)
+        // -- hash password
+        const hashPassword = await bcrypt.hash(password, 10);
 
         const user = await Prisma.user.create({
           data: {
             username,
             email,
             password: hashPassword,
-            profileImage
+            profileImage,
           },
         });
 
@@ -74,18 +77,17 @@ module.exports = {
           message: "Signup successfully",
           user,
         });
-
       } else {
         if (!username) {
-          return next(new ErrorHandler("Invalid username", 400))
+          return next(new ErrorHandler("Invalid username", 400));
         }
         if (!email) {
-          return next(new ErrorHandler("Invalid email", 400))
+          return next(new ErrorHandler("Invalid email", 400));
         }
 
-        // --- check the email is correct  
+        // --- check the email is correct
         if (!validator.isEmail(email)) {
-          return next(new ErrorHandler("Invalid email", 400))
+          return next(new ErrorHandler("Invalid email", 400));
         }
 
         // ---- chack is user already in db
@@ -106,12 +108,12 @@ module.exports = {
               } else {
                 console.log("file deleted successfuly");
               }
-            })
+            });
           }
-          return next(new ErrorHandler("User already exist", 400))
+          return next(new ErrorHandler("User already exist", 400));
         }
 
-        // -- check is profileimage in req 
+        // -- check is profileimage in req
         if (req.file) {
           var profileImage = req.file.filename;
         }
@@ -121,7 +123,7 @@ module.exports = {
             username,
             email,
             profileImage,
-            isSocialLogin: true
+            isSocialLogin: true,
           },
         });
 
@@ -141,26 +143,24 @@ module.exports = {
           message: "Signup successfully",
           user,
           token,
-          isSocialLogin: true
+          isSocialLogin: true,
         });
       }
-
     } catch (error) {
-      next(new ErrorHandler(error.message, 400))
+      next(new ErrorHandler(error.message, 400));
     }
   },
 
-  // ----  login user 
+  // ----  login user
   LoginUser: async (req, res, next) => {
     try {
-      const { email, password, isSocailLogin } = req.body;
-      if (isSocailLogin == false || isSocailLogin === "false") {
-
+      const { email, password, isSocialLogin } = req.body;
+      if (isSocialLogin === false || isSocialLogin === "false") {
         if (!email) {
-          return next(new ErrorHandler("Invalid email", 400))
+          return next(new ErrorHandler("Invalid email", 400));
         }
         if (!password) {
-          return next(new ErrorHandler("Invalid password", 400))
+          return next(new ErrorHandler("Invalid password", 400));
         }
 
         // check user exist or not
@@ -172,10 +172,12 @@ module.exports = {
 
         // if not exist
         if (!isUser) {
-          return next(new ErrorHandler("Invalid Credentials", 400))
+          return next(new ErrorHandler("Invalid Credentials", 400));
         }
         if (isUser.isSocialLogin == true) {
-          return next(new ErrorHandler("Plaese login with your socials acconts", 400))
+          return next(
+            new ErrorHandler("Plaese login with your socials acconts", 400)
+          );
         }
 
         // check password
@@ -183,7 +185,7 @@ module.exports = {
 
         // if not match
         if (!isPassword) {
-          return next(new ErrorHandler("Invalid Credentials", 400))
+          return next(new ErrorHandler("Invalid Credentials", 400));
         }
 
         // generate token
@@ -205,9 +207,8 @@ module.exports = {
           token,
         });
       } else {
-
         if (!email) {
-          return next(new ErrorHandler("Invalid email", 400))
+          return next(new ErrorHandler("Invalid email", 400));
         }
 
         // check user exist or not
@@ -219,13 +220,14 @@ module.exports = {
 
         // if not exist
         if (!isUser) {
-          return next(new ErrorHandler("Invalid Credentials", 400))
+          return next(new ErrorHandler("Invalid Credentials", 400));
         }
 
         if (isUser.isSocialLogin == false) {
-          return next(new ErrorHandler("Plaese login with your email or password", 400))
+          return next(
+            new ErrorHandler("Plaese login with your email or password", 400)
+          );
         }
-
 
         // generate token
         const token = jwt.sign(
@@ -246,76 +248,89 @@ module.exports = {
           token,
         });
       }
-
-
     } catch (error) {
-      next(new ErrorHandler(error.message, 400))
+      next(new ErrorHandler(error.message, 400));
     }
   },
 
- // -- verify user
- TokenVerify: async (req, res, next) => {
-  try {
-    const user = await Prisma.user.findFirst({
-      where: {
-        id: req.user.id,
-      },
-      include: {
-        properties: true,
-      },
-    });
+  // -- verify user
+  TokenVerify: async (req, res, next) => {
+    try {
+      const user = await Prisma.user.findFirst({
+        where: {
+          id: req.user.id,
+        },
+        include: {
+          properties: true,
+        },
+      });
 
-    // --- not of user
-    if (!user) {
-      return next(new ErrorHandler("Token is invalid", 400));
+      // --- not of user
+      if (!user) {
+        return next(new ErrorHandler("Token is invalid", 400));
+      }
+
+      res.status(200).json({
+        success: true,
+        user,
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
     }
+  },
 
-    res.status(200).json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    next(new ErrorHandler(error.message, 400));
-  }
-},
+  // --- update user profile
+  updateProfile: async (req, res, next) => {
+    try {
+      const user = await Prisma.user.findFirst({
+        where: {
+          id: req.user.id,
+        },
+      });
 
-// --- update user profile
-updateProfile: async (req, res, next) => {
-  try {
-    const user = await Prisma.user.findFirst({
-      where: {
-        id: req.user.id,
-      },
-    });
+      // --- not of user
+      if (!user) {
+        return next(new ErrorHandler("Token is invalid", 400));
+      }
 
-    // --- not of user
-    if (!user) {
-      return next(new ErrorHandler("Token is invalid", 400));
-    }
+      if (req.body.username) {
+        user.username = req.body.username;
+      }
 
-    if (req.body.username) {
-      user.username = req.body.username;
-    }
+      if (req.body.email) {
+        user.email = req.body.email;
+      }
 
-    if (req.body.email) {
-      user.email = req.body.email;
-    }
+      if (req.file) {
+        if (user?.profileImage) {
+          const filepath = path.join(
+            __dirname,
+            "../uploads",
+            user.profileImage
+          );
+          fs.unlink(filepath, async (err) => {
+            if (err) {
+              console.log(`Error in file deleting ${err}`);
+            }
+            console.log("File deleted successfully");
+            const file = req.file.filename;
+            const fileUrl = path.join(file);
+            user.profileImage = fileUrl;
+            const updatedUser = await Prisma.user.update({
+              where: { id: user.id },
+              data: user,
+            });
 
-    if (req.file) {
-      if (user?.profileImage) {
-        const filepath = path.join(
-          __dirname,
-          "../uploads",
-          user.profileImage
-        );
-        fs.unlink(filepath, async (err) => {
-          if (err) {
-            console.log(`Error in file deleting ${err}`);
-          }
-          console.log("File deleted successfully");
+            res.status(200).json({
+              success: true,
+              message: "User updated successfully",
+              updatedUser,
+            });
+          });
+        } else {
           const file = req.file.filename;
-          const fileUrl = path.join(file);
-          user.profileImage = fileUrl;
+          user.profileImage = file;
+          // await user.save();
           const updatedUser = await Prisma.user.update({
             where: { id: user.id },
             data: user,
@@ -326,42 +341,26 @@ updateProfile: async (req, res, next) => {
             message: "User updated successfully",
             updatedUser,
           });
-        });
+        }
       } else {
-        const file = req.file.filename;
-        user.profileImage = file;
+        // --- if noe file in req
         // await user.save();
         const updatedUser = await Prisma.user.update({
           where: { id: user.id },
           data: user,
         });
-
         res.status(200).json({
           success: true,
           message: "User updated successfully",
           updatedUser,
         });
       }
-    } else {
-      // --- if noe file in req
-      // await user.save();
-      const updatedUser = await Prisma.user.update({
-        where: { id: user.id },
-        data: user,
-      });
-      res.status(200).json({
-        success: true,
-        message: "User updated successfully",
-        updatedUser,
-      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
     }
-  } catch (error) {
-    next(new ErrorHandler(error.message, 400));
-  }
-},
+  },
 
-
-  //forget password 
+  //forget password
   ForgetPassword: async (req, res, next) => {
     try {
       const { email } = req.body;
@@ -376,15 +375,15 @@ updateProfile: async (req, res, next) => {
       if (!user) {
         return next(new ErrorHandler("User not found", 404));
       }
-      // const resetToken = Math.random().toString(36).slice(2);
       const OTP = Math.floor(Math.random() * 900 + 1000);
       try {
         await sendMail({
           email: user.email,
           subject: "Password Reset",
           message: `Hello ${user?.username} Your OTP is ${OTP} Plaese Verify`,
-        })
-        user.OTP = OTP
+        });
+        console.log(user);
+        user.OTP = OTP;
         await Prisma.user.update({
           where: {
             id: user.id,
@@ -393,12 +392,11 @@ updateProfile: async (req, res, next) => {
         });
         res.status(200).json({
           success: true,
-          message: "OTP send successfully please verify "
-        })
+          message: "OTP send successfully please verify ",
+        });
       } catch (error) {
-        next(new ErrorHandler(error.message, 400))
+        next(new ErrorHandler(error.message, 400));
       }
-
     } catch (error) {
       next(new ErrorHandler(error.message, 400));
     }
@@ -406,12 +404,11 @@ updateProfile: async (req, res, next) => {
   // New function to set a new password after OTP verification
   SetNewPassword: async (req, res, next) => {
     try {
-      const { OTP, Password, } = req.body;
-      const otpValue = parseInt(OTP, 10);
+      const { OTP, Password } = req.body;
+      const otpValue = parseInt(OTP);
       if (!OTP || !Password) {
         return next(new ErrorHandler("Invalid data provided", 400));
       }
-
       // Check if user exists with the provided email and OTP
       const user = await Prisma.user.findFirst({
         where: {
@@ -444,5 +441,5 @@ updateProfile: async (req, res, next) => {
     } catch (error) {
       next(new ErrorHandler(error.message, 400));
     }
-  }
-}
+  },
+};

@@ -1,5 +1,7 @@
 const Prisma = require("../prisma/PrismaClient");
 const ErrorHanlder = require("../utils/ErrorHandler");
+const Path = require("path");
+const fs = require("fs");
 
 module.exports = {
   // ---- create property
@@ -75,27 +77,32 @@ module.exports = {
           owner: req.user.id,
         },
       });
-      // --- create the media array  now
-      if (req.file) {
-        const file = req.file.filename;
-        var mediaArray = await Prisma.media.create({
+
+      // =============== media
+      if (req.files && req.files.length > 0) {
+        const mediaArray = [];
+        for (const file of req.files) {
+          const media = await Prisma.media.create({
+            data: {
+              images: file.filename,
+              property: createdProperty.id,
+            },
+          });
+          mediaArray.push(media);
+        }
+
+        await Prisma.property.update({
+          where: {
+            id: createdProperty.id,
+          },
           data: {
-            images: file,
-            property: createdProperty.id,
+            // Assuming 'images' is a relation field in your property model
+            images: {
+              connect: mediaArray.map((media) => ({ id: media.id })),
+            },
           },
         });
       }
-
-      await Prisma.property.update({
-        where: {
-          id: createdProperty.id,
-        },
-        data: {
-          images: {
-            connect: { id: mediaArray.id },
-          },
-        },
-      });
 
       await Prisma.user.update({
         where: {
@@ -118,7 +125,6 @@ module.exports = {
   },
 
   // --- get all properties
-
   GetProperties: async (req, res, next) => {
     try {
       const properties = await Prisma.property.findMany({
@@ -131,6 +137,97 @@ module.exports = {
       res.status(200).json({
         success: true,
         properties: properties,
+      });
+    } catch (error) {
+      next(new ErrorHanlder(error.message, 400));
+    }
+  },
+
+  // --- delete property
+  deleteProperty: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return next(new ErrorHanlder("Invalid Id", 400));
+      }
+      const property = await Prisma.property.findUnique({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      if (!property) {
+        return next(new ErrorHanlder("Property not found", 400));
+      }
+      if (property.owner !== req.user.id) {
+        return next(
+          new ErrorHanlder(
+            "You are not authorized to delete this property",
+            400
+          )
+        );
+      }
+      // Find all media associated with the property
+      const media = await Prisma.media.findMany({
+        where: {
+          property: parseInt(id),
+        },
+      });
+      // Delete each media entry
+      for (const mediaItem of media) {
+        const filepath = Path.join(__dirname, "../uploads", mediaItem.images);
+        fs.unlink(filepath, (err) => {
+          if (err) {
+            console.log(
+              `Could not delete ${mediaItem.images} because ${err.message}`
+            );
+          } else {
+            console.log(`Deleted ${mediaItem.images} successfully`);
+          }
+        });
+        await Prisma.media.delete({
+          where: {
+            id: mediaItem.id,
+          },
+        });
+      }
+      // Delete the property
+      await Prisma.property.delete({
+        where: {
+          id: parseInt(id),
+        },
+      });
+      res.status(200).json({
+        success: true,
+        message: "Property and associated media deleted successfully",
+      });
+    } catch (error) {
+      next(new ErrorHanlder(error.message, 400));
+    }
+  },
+
+  // ---- get property by id
+  GetPropertybyId: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return next(new ErrorHanlder("Invalid property Id", 400));
+      }
+      const property = await Prisma.property.findFirst({
+        where: {
+          id: parseInt(id),
+        },
+        include: {
+          User: true,
+          images: true,
+        },
+      });
+      if (!property) {
+        return next(new ErrorHanlder("Property not found", 400));
+      }
+
+      res.status(200).json({
+        success: true,
+        property,
       });
     } catch (error) {
       next(new ErrorHanlder(error.message, 400));
