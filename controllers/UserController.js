@@ -442,4 +442,88 @@ module.exports = {
       next(new ErrorHandler(error.message, 400));
     }
   },
+
+  // -- update user role  --Admin
+
+  updateUserRole: async (req, res, next) => {
+    try {
+      const { role } = req.body;
+      const { id } = req.params;
+      if (!id) {
+        return next(new ErrorHandler(`Id is not defined`, 400));
+      }
+      if (!role) {
+        return next(new ErrorHandler("role not found", 400));
+      }
+
+      const user = await Prisma.user.findFirst({
+        where: {
+          id: parseInt(id),
+        },
+      });
+
+      if (!user) {
+        return next(new ErrorHandler("user not found", 400));
+      }
+
+      user.role = role;
+
+      const updatedUser = await Prisma.user.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: user,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Role updated successfully",
+        updatedUser,
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  },
+
+  // get all rusers
+  getAllUsers: async (req, res, next) => {
+    try {
+      const users = await Prisma.user.findMany();
+      res.status(200).json({
+        success: true,
+        users,
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  },
+
+  // --- find by id
+
+  findUserById: async (req, res, next) => {
+    try {
+      const { userId } = req.params;
+      // Check if the user exists
+      const user = await Prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          properties: {
+            include: {
+              images: true,
+              additionalfeatures: true,
+            },
+          },
+        },
+      });
+      if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+      res.status(200).json({
+        success: true,
+        user,
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  },
 };

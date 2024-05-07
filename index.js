@@ -4,9 +4,17 @@ const app = express();
 const morgan = require("morgan");
 const error = require("./Middleware/error");
 const path = require("path");
+const cors = require("cors");
 
 // .env
 dotenv.config();
+
+// --- cors
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 // ---morgan
 app.use(morgan("dev"));

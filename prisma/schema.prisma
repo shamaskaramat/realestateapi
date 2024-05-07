@@ -22,23 +22,24 @@ model User {
 }
 
 model Property {
-  id          Int     @id @default(autoincrement())
-  type        String
-  status      String // is only rent or sale
-  price       Int // in dollars
-  rooms       Int
-  beds        Int
-  baths       Int
-  area        Int
-  description String
-  address     String
-  zipCode     String
-  country     String
-  city        String
-  landmark    String
-  owner       Int
-  User        User    @relation(fields: [owner], references: [id])
-  images      Media[]
+  id                 Int                  @id @default(autoincrement())
+  type               String
+  status             String // is only rent or sale
+  price              Int // in dollars
+  rooms              Int
+  beds               Int
+  baths              Int
+  area               Int
+  description        String
+  address            String
+  zipCode            String
+  country            String
+  city               String
+  landmark           String
+  owner              Int
+  User               User                 @relation(fields: [owner], references: [id])
+  images             Media[]
+  additionalfeatures additionalfeatures[]
 }
 
 model Media {
@@ -46,4 +47,11 @@ model Media {
   images        String
   property      Int
   PopertyImages Property @relation(fields: [property], references: [id])
+}
+
+model additionalfeatures {
+  id          Int      @id @default(autoincrement())
+  name        String
+  property_id Int
+  property    Property @relation(fields: [property_id], references: [id])
 }

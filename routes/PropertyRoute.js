@@ -17,4 +17,6 @@ router.delete("/delete/:id", TokenVerify, controller.deleteProperty);
 
 router.get("/property/:id", controller.GetPropertybyId);
 
+router.post("/filtration", controller.FilterProperty);
+
 module.exports = router;

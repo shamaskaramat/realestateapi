@@ -21,6 +21,7 @@ module.exports = {
         country,
         city,
         landmark,
+        addtitionalFeatures,
       } = req.body;
       if (
         !type ||
@@ -115,6 +116,30 @@ module.exports = {
         },
       });
 
+      console.log(req.body);
+
+      // ----- add additionalfeatures
+      if (addtitionalFeatures?.length > 0) {
+        for (const feature of addtitionalFeatures) {
+          const featureData = await Prisma.additionalfeatures.create({
+            data: {
+              name: feature,
+              property_id: createdProperty.id,
+            },
+          });
+          await Prisma.property.update({
+            where: {
+              id: createdProperty.id,
+            },
+            data: {
+              additionalfeatures: {
+                connect: { id: featureData.id },
+              },
+            },
+          });
+        }
+      }
+
       res.status(200).json({
         success: true,
         message: "Property created successfully",
@@ -131,6 +156,7 @@ module.exports = {
         include: {
           User: true,
           images: true,
+          additionalfeatures: true,
         },
       });
 
@@ -190,6 +216,27 @@ module.exports = {
           },
         });
       }
+
+
+      // ---- delete the additionalfeatures 
+      const Features = await Prisma.additionalfeatures.findMany({
+        where :{
+          property_id : parseInt(id)
+        }
+      });
+
+      for (const feature of Features) {
+        await Prisma.additionalfeatures.delete({
+          where :{
+            id : feature.id
+          }
+        })
+      }
+
+
+
+
+
       // Delete the property
       await Prisma.property.delete({
         where: {
@@ -228,6 +275,75 @@ module.exports = {
       res.status(200).json({
         success: true,
         property,
+      });
+    } catch (error) {
+      next(new ErrorHanlder(error.message, 400));
+    }
+  },
+
+  // --- add filtration
+  FilterProperty: async (req, res, next) => {
+    try {
+      const {
+        type,
+        status,
+        room,
+        bed,
+        bath,
+        minPrice,
+        maxPrice,
+        minArea,
+        maxArea,
+      } = req.body;
+      if (!type) {
+        return next(new ErrorHanlder("type is missing", 400));
+      }
+      if (!status) {
+        return next(new ErrorHanlder("status is missing", 400));
+      }
+      if (!room) {
+        return next(new ErrorHanlder("room is missing", 400));
+      }
+      if (!bed) {
+        return next(new ErrorHanlder("bed is missing", 400));
+      }
+      if (!bath) {
+        return next(new ErrorHanlder("bath is missing", 400));
+      }
+      if (!minPrice) {
+        return next(new ErrorHanlder("minPrice is missing", 400));
+      }
+      if (!maxPrice) {
+        return next(new ErrorHanlder("maxPrice is missing", 400));
+      }
+      if (!minArea) {
+        return next(new ErrorHanlder("minArea is missing", 400));
+      }
+      if (!maxArea) {
+        return next(new ErrorHanlder("maxArea is missing", 400));
+      }
+
+      const properties = await Prisma.property.findMany({
+        where: {
+          status: status,
+          type: type,
+          rooms: parseInt(room),
+          beds: parseInt(bed),
+          baths: parseInt(bath),
+          area: {
+            gte: parseInt(minArea),
+            lte: parseInt(maxArea),
+          },
+          price: {
+            gte: parseInt(minPrice),
+            lte: parseInt(maxPrice),
+          },
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        properties,
       });
     } catch (error) {
       next(new ErrorHanlder(error.message, 400));

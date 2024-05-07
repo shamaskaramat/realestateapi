@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require("../controllers/UserController");
 const TokenVerify = require("../Middleware/TokenVerify");
 const { upload } = require("../Middleware/Multer");
+const AdminVerify = require("../middleware/AdminVerify");
 
 router.post("/signup", upload.single("file"), controller.CreateUser);
 
@@ -22,9 +23,23 @@ router.put(
   controller.updateProfile
 );
 
-// Route for resetting password based on token
 router.post("/forgotpassword", controller.ForgetPassword);
 
-// Route for setting a new password after OTP verification
 router.post("/resetpassword", controller.SetNewPassword);
+
+router.post(
+  "/role/:id",
+  TokenVerify,
+  AdminVerify("admin"),
+  controller.updateUserRole
+);
+
+router.get(
+  "/getallusers",
+  TokenVerify,
+  AdminVerify("admin"),
+  controller.getAllUsers
+);
+router.get("/:userId", controller.findUserById);
+
 module.exports = router;
